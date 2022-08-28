@@ -6,13 +6,13 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class TaskQueue {
     static ExecutorService executor;
-    Stack<NLP> nlps = new Stack<>();
     static NLP nlp;
-    static final int numberOfThreads = 10;
+    static final int numberOfThreads = Runtime.getRuntime().availableProcessors()+4;
 
     public TaskQueue(AtomicReference<Double> totalSentiment) {
         executor = Executors.newFixedThreadPool(numberOfThreads);
         nlp = new NLP(totalSentiment);
+        System.out.println(numberOfThreads);
     }
 
     public boolean addTweetToQueue(String tweet){

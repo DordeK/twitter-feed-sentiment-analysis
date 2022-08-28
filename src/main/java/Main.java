@@ -16,10 +16,10 @@ import java.util.concurrent.atomic.AtomicReference;
 public class Main {
      static Set<String> tweetFields = new HashSet<>();
      static Set<String> expansions = new HashSet<>();
-     static int tweetsPerPage = 15;
+     static int tweetsPerPage = 100;
      static int retries = 4;
      static AtomicReference<Double> totalSentiment = new AtomicReference<>((double) 0);
-     static OffsetDateTime  startTime = OffsetDateTime.now().minusMinutes(0).minusSeconds(30);
+     static OffsetDateTime  startTime = OffsetDateTime.now().minusMinutes(1).minusSeconds(0);
      static OffsetDateTime endTime = OffsetDateTime.now().minusSeconds(10);
      static String queryTopic = "eth";
      static int totalReadTweetsSoFar = 0;
@@ -35,7 +35,7 @@ public class Main {
         final long startTimeOfProgram = System.currentTimeMillis();
         TaskQueue taskQueue = new TaskQueue(totalSentiment);
 
-        TwitterApi apiInstance = new TwitterApi(new TwitterCredentialsBearer());
+        TwitterApi apiInstance = new TwitterApi(new TwitterCredentialsBearer("AAAAAAAAAAAAAAAAAAAAAHnbgAEAAAAAR9J95%2BNN65nXM33MxMU39LvAmI8%3DvdU5W0ClDXhBVHS6b0VZnxvj5Xx7nIONwiTSglxpmhVHaPCtz2"));
         TweetsApi result = apiInstance.tweets();
 
         int numberOfTweets = result.tweetCountsRecentSearch(queryTopic)
@@ -52,16 +52,13 @@ public class Main {
                 .endTime(endTime)
                 .maxResults(tweetsPerPage)
                 .execute(retries);
-        AtomicReference<String> textToAnalize = new AtomicReference<>("");
-        page.getData().stream().forEach(tweet -> textToAnalize.set(textToAnalize.get()+tweet.getText()));
-        System.out.println(parseTetx(textToAnalize.get()));
-        taskQueue.addTweetToQueue(parseTetx(textToAnalize.get()));
-        totalReadTweetsSoFar+=tweetsPerPage;
 
+        page.getData().stream().forEach(tweet -> taskQueue.addTweetToQueue(parseTetx(tweet.getText())));
+
+        totalReadTweetsSoFar+=tweetsPerPage;
 
         String nextPage = page.getMeta().getNextToken();
         while(nextPage != null){
-            textToAnalize.set("");
             page = result.tweetsRecentSearch(queryTopic)
                     .startTime(startTime)
                     .endTime(endTime)
@@ -70,8 +67,7 @@ public class Main {
                     .execute(retries);
             totalReadTweetsSoFar+=tweetsPerPage;
             nextPage = page.getMeta().getNextToken();
-            page.getData().stream().forEach(tweet -> textToAnalize.set(textToAnalize.get()+tweet.getText()));
-            taskQueue.addTweetToQueue(parseTetx(textToAnalize.get()));
+            page.getData().stream().forEach(tweet -> taskQueue.addTweetToQueue(parseTetx(tweet.getText())));
         }
         System.out.println("------ GOT ALL TWEETS ------");
         taskQueue.executor.shutdown();
